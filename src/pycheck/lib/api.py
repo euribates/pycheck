@@ -5,6 +5,8 @@ from pycheck import settings
 
 URL_LOGIN = f'{settings.URL_API}/login/'
 URL_STATUS = f'{settings.URL_API}/status/'
+URL_ALL_BADGES = f'{settings.URL_API}/badges/all/'
+
 STATUS_OK = 'ok'
 
 

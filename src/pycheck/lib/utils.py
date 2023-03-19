@@ -4,10 +4,11 @@ import sys
 
 import pkg_resources
 from rich import print
-
-from pycheck import settings
+from typing import Dict, List
 
 from .exceptions import NotAuthorizedError
+from pycheck import settings
+from . import api
 
 
 def update_pycheck():
@@ -35,3 +36,10 @@ def succ_msg(text: str):
 
 def err_msg(text: str):
     print(f'[red]{settings.ERROR_MSG_EMOJI}[/] {text}')
+
+
+def get_all_badges() -> List[Dict]:
+    '''Todos los badgets posibles.
+    '''
+    print(api.URL_ALL_BADGES)
+    return api.api_get(api.URL_ALL_BADGES)

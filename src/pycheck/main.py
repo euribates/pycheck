@@ -2,6 +2,7 @@ from pathlib import Path
 
 import typer
 from rich import print
+from rich.table import Table
 
 import pycheck
 from pycheck.lib import admin, auth, utils
@@ -167,6 +168,23 @@ def status():
     '''Muestra el estado de la api de pycheck.es.'''
     status = auth.status()
     print(status['result'])
+
+
+@app.command()
+def badges():
+    '''Muestra los badges posibles.
+    '''
+    table = Table(title="Available badges")
+    table.add_column("Badge", style="cyan", no_wrap=True)
+    table.add_column("Name", style="bold")
+    table.add_column("Description", style="green")
+    for badge in utils.get_all_badges()['result']:
+        table.add_row(
+            badge['symbol'],
+            badge['name'],
+            badge['description'],
+            )
+    print(table)
 
 
 @app.command()
