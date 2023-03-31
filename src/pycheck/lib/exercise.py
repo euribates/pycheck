@@ -1,8 +1,10 @@
 import importlib
 import sys
+import zipfile
 from pathlib import Path
 
 import typer
+from jinja2 import Environment, FileSystemLoader
 from rich import print
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -32,11 +34,18 @@ class Exercise:
         self.name = self.filepath.stem
         self.filename = self.filepath.name
         self.hash = utils.gen_hash(self.name)
-        self.config_path = settings.EXERCISES_CONFIG_PATH / self.hash
         self.config_module = f'{settings.EXERCISES_CONFIG_MODULE}.{self.hash}'
-        self.__get_config()
-        self.__get_arg_casts()
+        self.config_data_path = (settings.EXERCISES_CONFIG_DIR / self.hash).with_suffix(
+            '.zip'
+        )
+        self.data_dir = (
+            self.filepath.parent / f'{settings.EXERCISE_CONFIG_DATA_DIRNAME}/{self.name}'
+        )
+        self._get_config()
+        self._get_arg_casts()
         self.multiple_returns = len(self.entrypoint['return']) > 1
+        self.params_have_files = any(t == Path for _, t in self.entrypoint['params'])
+        self.returns_file = self.entrypoint['return'][0][1] == Path
         self.case_no = 0
 
     def __str__(self):
@@ -53,14 +62,27 @@ class Exercise:
             self.case_no = case_no
 
     def create_template(self, ask_on_overwrite: bool = True):
-        if (
+        if not (
             self.filepath.exists()
             and ask_on_overwrite
             and not typer.confirm('Ya existe la plantilla. ¿Desea sobreescribirla?')
         ):
-            return
-        self.filepath.write_text(self.__render_template())
-        utils.succ_msg(f"Plantilla creada satisfactoriamente: [cyan]{self.filepath}")
+            self.filepath.write_text(self._render_template())
+            utils.succ_msg(f"Plantilla creada satisfactoriamente: [cyan]{self.filepath}")
+
+        if zipfile.is_zipfile(self.config_data_path):
+            if not (
+                self.data_dir.exists()
+                and ask_on_overwrite
+                and not typer.confirm(
+                    'Ya existe la carpeta de datos. ¿Desea sobreescribirla?'
+                )
+            ):
+                with zipfile.ZipFile(self.config_data_path) as zf:
+                    zf.extractall(self.data_dir)
+                utils.succ_msg(
+                    f"Carpeta de datos creada satisfactoriamente: [cyan]{self.data_dir}"
+                )
 
     def get_target_func(self, ignore_stdin: bool = False) -> callable:
         module_name = self.filepath.stem
@@ -115,12 +137,13 @@ class Exercise:
         if check_cases:
             self.show_check_cases()
 
-    def __get_config(self):
+    def _get_config(self):
         try:
             config = importlib.import_module(self.config_module)
         except ModuleNotFoundError:
             raise ExerciseNotAvailableError(self)
         self.description = config.DESCRIPTION.strip()
+        self.empty_template = getattr(config, 'EMPTY_TEMPLATE', settings.EMPTY_TEMPLATE)
         self.entrypoint = {
             'name': config.ENTRYPOINT.get('NAME', settings.ENTRYPOINT_NAME),
             'params': config.ENTRYPOINT['PARAMS'],
@@ -129,35 +152,64 @@ class Exercise:
         self.check_cases = config.CHECK_CASES
         self.title = config.TITLE.upper()
 
-    def __get_arg_casts(self):
-        PRIMITIVE_TYPES = [int, bool, float, str]
+    def _get_arg_casts(self):
+        PRIMITIVE_TYPES = [int, bool, float, str, Path]
         self.arg_casts = []
         for _, param_type in self.entrypoint['params']:
             cast = param_type if param_type in PRIMITIVE_TYPES else eval
             self.arg_casts.append(cast)
 
-    def __render_template(self) -> str:
+    def _render_template(self) -> str:
+        # Title
+        title = f"# {'*' * len(self.title)}\n# {self.title}\n# {'*' * len(self.title)}"
+        # Function name
+        func = self.entrypoint['name']
+        # Params
         params = ', '.join(
             f'{param}: {annot.__name__}' for param, annot in self.entrypoint['params']
         )
+        # Args
         args = ', '.join(repr(c) for c in self.check_cases[0][0])
-        return_names = [ret_name for ret_name, _ in self.entrypoint['return']]
-        code_here = ' = '.join(return_names) + f" = '{settings.CODEHERE_PLACEHOLDER}'"
-        return_sentence = 'return ' + ', '.join(return_names)
-        return_type = (
-            'tuple' if self.multiple_returns else self.entrypoint['return'][0][1].__name__
+        # Return
+        if self.multiple_returns:
+            return_type = 'tuple'
+        elif self.returns_file:
+            return_type = 'bool'
+        else:
+            return_type = self.entrypoint['return'][0][1].__name__
+        if self.returns_file:
+            return_name = self.entrypoint['return'][0][0]
+            expected_file = f'{self.data_dir / ".expected"}'
+            return_items = f"filecmp.cmp({return_name}, '{expected_file}', shallow=False)"
+            output_path = self.check_cases[0][1][0]
+            output_placeholder = f"{return_name} = '{output_path}'"
+        else:
+            return_names = [ret_name for ret_name, _ in self.entrypoint['return']]
+            return_items = ', '.join(return_names)
+            output_placeholder = (
+                ' = '.join(return_names) + f" = '{settings.OUTPUT_PLACEHOLDER}'"
+            )
+
+        env = Environment(
+            loader=FileSystemLoader(settings.TEMPLATES_DIR),
+            trim_blocks=True,
+            lstrip_blocks=True,
         )
-        title = f"# {'*' * len(self.title)}\n# {self.title}\n# {'*' * len(self.title)}"
-        func = self.entrypoint['name']
-
-        return f"""{title}
-
-
-def {func}({params}) -> {return_type}:
-    {code_here}
-    {return_sentence}
-
-
-if __name__ == '__main__':
-    {func}({args})
-"""
+        template_name = (
+            settings.EXERCISE_EMPTY_TEMPLATE_NAME
+            if self.empty_template
+            else settings.EXERCISE_TEMPLATE_NAME
+        )
+        template = env.get_template(template_name)
+        context = dict(
+            title=title,
+            func=func,
+            params=params,
+            return_type=return_type,
+            output_placeholder=output_placeholder,
+            return_items=return_items,
+            args=args,
+            returns_file=self.returns_file,
+            params_have_files=self.params_have_files,
+        )
+        return template.render(context)

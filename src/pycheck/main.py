@@ -1,3 +1,4 @@
+import webbrowser
 from pathlib import Path
 
 import typer
@@ -5,6 +6,7 @@ from rich import print
 from rich.table import Table
 
 import pycheck
+from pycheck import settings
 from pycheck.lib import admin, auth, utils
 from pycheck.lib.exceptions import (
     CheckCaseNotFoundError,
@@ -15,7 +17,7 @@ from pycheck.lib.utils import admin_required
 
 app = typer.Typer(
     add_completion=False,
-    help='✨ pycheck es un comprobador de ejercicios escritos en Python.',
+    help='✨ pycheck es un comprobador de ejercicios escritos en Python: 📘 pycheck.es/docs',
     no_args_is_help=True,
 )
 
@@ -209,6 +211,12 @@ def login(
     else:
         error_message = token_or_error_message
         utils.err_msg(f'Error de identificación: {error_message}')
+
+
+@app.command()
+def docs():
+    '''Abre la página que contiene la documentación sobre pycheck.'''
+    webbrowser.open(settings.PYCHECK_DOCS_URL)
 
 
 # *************************************************

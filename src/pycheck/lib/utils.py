@@ -21,7 +21,7 @@ def get_pycheck_version():
 
 
 def admin_required():
-    key_hash = hash(settings.KEY_ADMIN_PRIVATE)
+    key_hash = gen_hash(settings.KEY_ADMIN_PRIVATE)
     if key_hash != settings.KEY_ADMIN_PUBLIC:
         raise NotAuthorizedError()
 
@@ -38,8 +38,11 @@ def err_msg(text: str):
     print(f'[red]{settings.ERROR_MSG_EMOJI}[/] {text}')
 
 
+def warn_msg(text: str):
+    print(f'[yellow]{settings.WARNING_MSG_EMOJI}[/] {text}')
+
+
 def get_all_badges() -> List[Dict]:
     '''Todos los badgets posibles.
     '''
-    print(api.URL_ALL_BADGES)
     return api.api_get(api.URL_ALL_BADGES)
