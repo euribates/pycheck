@@ -3,10 +3,11 @@ import urllib.request
 
 from pycheck import settings
 
-URL_LOGIN = f'{settings.URL_API}/login/'
-URL_STATUS = f'{settings.URL_API}/status/'
 URL_ALL_BADGES = f'{settings.URL_API}/badges/all/'
+URL_LOGIN = f'{settings.URL_API}/login/'
 URL_OWNED_BADGES = f'{settings.URL_API}/badges/owned/'
+URL_SCORE = f'{settings.URL_API}/score/'
+URL_STATUS = f'{settings.URL_API}/status/'
 
 
 STATUS_OK = 'ok'

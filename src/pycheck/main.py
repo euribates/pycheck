@@ -16,6 +16,7 @@ from pycheck.lib.exceptions import (
 from pycheck.lib.utils import (
     admin_required,
     as_human_date,
+    as_passed,
     )
 
 app = typer.Typer(
@@ -214,6 +215,35 @@ def badges(owned: bool=False):
                 badge['description'],
                 )
         print(table)
+
+
+@app.command(hidden=True)
+def score():
+    '''Muestra los ejercicios presentados / resueltos.
+    '''
+    scores = utils.get_score()
+    table = Table(title='Ejercicios presentados')
+    table.add_column("name", style="cyan", no_wrap=True)
+    table.add_column("Submitted at")
+    table.add_column("Points")
+    table.add_column("Pass", style="bold")
+    total = 0
+    if scores:
+        for score in scores:
+            table.add_row(
+                score['name'],
+                as_human_date(score['submitted_at']),
+                as_passed(score['passed']),
+                str(score['points']) if score['passed'] else '-',
+                )
+            if score['passed']:
+                total += score['points']
+        table.add_section()
+        table.add_row('', '', 'Total', str(total))
+        print(table)
+
+    else:
+        print('Todavía no tienes ningún ejercicio presentado')
 
 
 @app.command()

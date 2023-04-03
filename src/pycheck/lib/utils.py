@@ -31,6 +31,12 @@ def as_human_date(dt: datetime.date|datetime.datetime) -> str:
     return dt.strftime('%d/%b/%Y')
 
 
+def as_passed(flag: bool) -> str:
+    """Representación textual de estado de resolución de un ejercicio.
+    """
+    return '[green]OK[/]' if flag else '[red]Error[/]'
+
+
 def update_pycheck():
     url = f'git+{settings.GITHUB_REPO}'
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-U', url])
@@ -84,6 +90,21 @@ def get_owned_badges() -> List[Dict]:
         result = _process_response(response)
         for item in result:
             item['granted_at'] = to_datetime(item['granted_at'])
+        return result
+    warn_msg(
+        'No puedo localizar el token de autenticación. Seguramente'
+        ' necesitas identificarte con el comando `login`.'
+        )
+    return []
+
+
+def get_score() -> List[Dict]:
+    token = auth.get_token()
+    if token:
+        response = api.api_post(api.URL_SCORE, token=token)
+        result = _process_response(response)
+        for item in result:
+            item['submitted_at'] = to_datetime(item['submitted_at'])
         return result
     warn_msg(
         'No puedo localizar el token de autenticación. Seguramente'
