@@ -13,8 +13,10 @@ from pycheck.lib.exceptions import (
     ExerciseNotAvailableError,
     TemplateNotFoundError,
 )
-from pycheck.lib.utils import admin_required
-from pycheck.lib.filters import as_datetime, as_human_date
+from pycheck.lib.utils import (
+    admin_required,
+    as_human_date,
+    )
 
 app = typer.Typer(
     add_completion=False,
@@ -193,7 +195,7 @@ def badges(owned: bool=False):
                     badge['symbol'],
                     badge['name'],
                     badge['description'],
-                    as_human_date(as_datetime(badge['granted_at'])),
+                    as_human_date(badge['granted_at']),
                     )
             print(table)
         else:

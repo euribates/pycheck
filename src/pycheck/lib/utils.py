@@ -1,4 +1,5 @@
 import hashlib
+import datetime
 import subprocess
 import sys
 
@@ -10,6 +11,24 @@ from .exceptions import NotAuthorizedError
 from pycheck import settings
 from . import api
 from . import auth
+
+
+# Parsers
+
+
+def to_datetime(string_in_iso_8601: str) -> datetime.datetime:
+    """Convierte una cadena de texto en formato ISO 8601 en un datetime.
+    """
+    return datetime.datetime.fromisoformat(string_in_iso_8601)
+
+
+# Filters
+
+
+def as_human_date(dt: datetime.date|datetime.datetime) -> str:
+    """Representación textual de un objeto date o datetime.
+    """
+    return dt.strftime('%d/%b/%Y')
 
 
 def update_pycheck():
@@ -62,7 +81,10 @@ def get_owned_badges() -> List[Dict]:
     token = auth.get_token()
     if token:
         response = api.api_post(api.URL_OWNED_BADGES, token=token)
-        return _process_response(response)
+        result = _process_response(response)
+        for item in result:
+            item['granted_at'] = to_datetime(item['granted_at'])
+        return result
     warn_msg(
         'No puedo localizar el token de autenticación. Seguramente'
         ' necesitas identificarte con el comando `login`.'
