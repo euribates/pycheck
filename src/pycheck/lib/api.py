@@ -8,6 +8,7 @@ URL_LOGIN = f'{settings.URL_API}/login/'
 URL_OWNED_BADGES = f'{settings.URL_API}/badges/owned/'
 URL_SCORE = f'{settings.URL_API}/score/'
 URL_STATUS = f'{settings.URL_API}/status/'
+URL_SUBMIT = f'{settings.URL_API}/submit/'
 
 
 STATUS_OK = 'ok'

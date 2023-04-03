@@ -246,6 +246,27 @@ def score():
         print('Todavía no tienes ningún ejercicio presentado')
 
 
+@app.command(hidden=True)
+def submit(name: Path = typer.Argument(
+        ...,
+        help='Nombre del ejercicio (puede ser una ruta).',
+        show_default=False,
+        )):
+    '''Presenta un ejercicio para ser evaluado.
+    '''
+    try:
+        exercise = pycheck.Exercise(name)
+        with open(exercise.filename, 'r', encoding='utf-8') as f_in:
+            body = f_in.read()
+            result = utils.submit_exercise(
+                exercise,
+                body,
+                )
+            print(f'Presentado Ejercicio [green]{exercise.name}[/] con id. de presentación {result}')
+    except ExerciseNotAvailableError as err:
+        print(err)
+
+
 @app.command()
 def login(
     student: str = typer.Argument(

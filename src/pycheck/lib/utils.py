@@ -111,3 +111,25 @@ def get_score() -> List[Dict]:
         ' necesitas identificarte con el comando `login`.'
         )
     return []
+
+
+def submit_exercise(exercise, body) -> bool:
+    token = auth.get_token()
+    if token:
+        response = api.api_post(
+            api.URL_SUBMIT,
+            token=token,
+            payload={
+                'name': exercise.name,
+                'filename': exercise.filename,
+                'body': body,
+                }
+            )
+        result = _process_response(response)
+        return result 
+    warn_msg(
+        'No puedo localizar el token de autenticación. Seguramente'
+        ' necesitas identificarte con el comando `login`.'
+        )
+    return []
+
