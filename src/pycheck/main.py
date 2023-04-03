@@ -225,8 +225,8 @@ def score():
     table = Table(title='Ejercicios presentados')
     table.add_column("name", style="cyan", no_wrap=True)
     table.add_column("Submitted at")
-    table.add_column("Points")
     table.add_column("Pass", style="bold")
+    table.add_column("Points")
     total = 0
     if scores:
         for score in scores:

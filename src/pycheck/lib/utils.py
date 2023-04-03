@@ -34,7 +34,7 @@ def as_human_date(dt: datetime.date|datetime.datetime) -> str:
 def as_passed(flag: bool) -> str:
     """Representación textual de estado de resolución de un ejercicio.
     """
-    return '[green]OK[/]' if flag else '[red]Error[/]'
+    return '[green]OK[/]' if flag else '[yellow]Queued[/]'
 
 
 def update_pycheck():
