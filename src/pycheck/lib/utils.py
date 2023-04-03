@@ -9,6 +9,7 @@ from typing import Dict, List
 from .exceptions import NotAuthorizedError
 from pycheck import settings
 from . import api
+from . import auth
 
 
 def update_pycheck():
@@ -42,7 +43,28 @@ def warn_msg(text: str):
     print(f'[yellow]{settings.WARNING_MSG_EMOJI}[/] {text}')
 
 
+def _process_response(response):
+    status = response['status']
+    if status == 'error':
+        err_msg(response['message'])
+        raise ValueError(response['message'])
+    return response['result']
+
+
 def get_all_badges() -> List[Dict]:
     '''Todos los badgets posibles.
     '''
-    return api.api_get(api.URL_ALL_BADGES)
+    response = api.api_get(api.URL_ALL_BADGES)
+    return _process_response(response)
+
+
+def get_owned_badges() -> List[Dict]:
+    token = auth.get_token()
+    if token:
+        response = api.api_post(api.URL_OWNED_BADGES, token=token)
+        return _process_response(response)
+    warn_msg(
+        'No puedo localizar el token de autenticación. Seguramente'
+        ' necesitas identificarte con el comando `login`.'
+        )
+    return []

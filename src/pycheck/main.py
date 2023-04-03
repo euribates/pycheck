@@ -14,6 +14,7 @@ from pycheck.lib.exceptions import (
     TemplateNotFoundError,
 )
 from pycheck.lib.utils import admin_required
+from pycheck.lib.filters import as_datetime, as_human_date
 
 app = typer.Typer(
     add_completion=False,
@@ -172,21 +173,45 @@ def status():
     print(status['result'])
 
 
-@app.command()
-def badges():
+@app.command(hidden=True)
+def badges(owned: bool=False):
     '''Muestra los badges posibles.
+
+    Si se usa la opción `--owned`, se muestran solo los que has obtenido.
     '''
-    table = Table(title="Available badges")
-    table.add_column("Badge", style="cyan", no_wrap=True)
-    table.add_column("Name", style="bold")
-    table.add_column("Description", style="green")
-    for badge in utils.get_all_badges()['result']:
-        table.add_row(
-            badge['symbol'],
-            badge['name'],
-            badge['description'],
-            )
-    print(table)
+    if owned:
+        title = "Owned badges"
+        badges = utils.get_owned_badges()
+        if badges:
+            table = Table(title=title)
+            table.add_column("Badge", style="cyan", no_wrap=True)
+            table.add_column("Name", style="bold")
+            table.add_column("Description", style="green")
+            table.add_column("Granted at", style="green")
+            for badge in badges:
+                table.add_row(
+                    badge['symbol'],
+                    badge['name'],
+                    badge['description'],
+                    as_human_date(as_datetime(badge['granted_at'])),
+                    )
+            print(table)
+        else:
+            print('Todavía no tienes ningún badge')
+    else:
+        title = "Available badges"
+        badges = utils.get_all_badges()
+        table = Table(title=title)
+        table.add_column("Badge", style="cyan", no_wrap=True)
+        table.add_column("Name", style="bold")
+        table.add_column("Description", style="green")
+        for badge in badges:
+            table.add_row(
+                badge['symbol'],
+                badge['name'],
+                badge['description'],
+                )
+        print(table)
 
 
 @app.command()

@@ -5,6 +5,16 @@ from pycheck import settings
 from pycheck.lib import api
 
 
+def get_token():
+    if (filename := settings.USER_CONFIG).exists():
+        user_config = configparser.ConfigParser()
+        with open(filename, 'r') as user_config_file:
+            user_config.read_file(user_config_file)
+            token = user_config.get('auth', 'token')
+            return token
+    return None
+
+
 def get_student_id():
     if (filename := settings.USER_CONFIG).exists():
         user_config = configparser.ConfigParser()
